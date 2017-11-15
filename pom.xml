@@ -136,15 +136,18 @@
 						</executions>
 					</plugin>
 					<!-- GPG mvn clean deploy -P release -Dgpg.passphrase=YourPassphase -->
+					<!-- 要将源码放上去，需要加入这个插件 -->
 					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>2.1</version>
+						<configuration>
+							<attach>true</attach>
+						</configuration>
 						<executions>
 							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
+								<phase>compile</phase>
 								<goals>
-									<goal>sign</goal>
+									<goal>jar</goal>
 								</goals>
 							</execution>
 						</executions>
@@ -162,7 +165,7 @@
 					<id>suzy2-repository</id>
 					<name>suzy2</name>
 					<url>https://raw.githubusercontent.com/SuZhenYu2/maven-repo/master/Repository</url>
- 				</repository>
+				</repository>
 			</repositories>
 		</profile>
 	</profiles>

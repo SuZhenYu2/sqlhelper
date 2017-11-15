@@ -26,8 +26,8 @@ import org.apache.log4j.Logger;
 @Intercepts({@Signature(type = StatementHandler.class, method = "query", args = {Statement.class, ResultHandler.class}),
     @Signature(type = StatementHandler.class, method = "update", args = {Statement.class}),
     @Signature(type = StatementHandler.class, method = "batch", args = { Statement.class })})
-public class SqlCostInterceptor implements Interceptor {
-	private static Logger LOGGER=Logger.getLogger(SqlCostInterceptor.class);
+public class SqlHelper implements Interceptor {
+	private static Logger LOGGER=Logger.getLogger(SqlHelper.class);
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
         Object target = invocation.getTarget();
@@ -173,16 +173,18 @@ public class SqlCostInterceptor implements Interceptor {
             // 基本数据类型或者基本数据类型的包装类，直接toString即可获取其真正的参数值，其余直接取paramterMapping中的property属性即可
             if (isPrimitiveOrPrimitiveWrapper(parameterObjectClass)) {
                 propertyValue = parameterObject.toString();
-            } else {
-                String propertyName = parameterMapping.getProperty();
-                
-                Field field = parameterObjectClass.getDeclaredField(propertyName);
-                // 要获取Field中的属性值，这里必须将私有属性的accessible设置为true
-                field.setAccessible(true);
-                propertyValue = String.valueOf(field.get(parameterObject));
-                if (parameterMapping.getJavaType().isAssignableFrom(String.class)) {
-                    propertyValue = "\"" + propertyValue + "\"";
-                }
+            } else if(parameterObjectClass == String.class) {
+            	propertyValue =(String) parameterObject;
+            }else {
+            	 String propertyName = parameterMapping.getProperty();
+                 
+                 Field field = parameterObjectClass.getDeclaredField(propertyName);
+                 // 要获取Field中的属性值，这里必须将私有属性的accessible设置为true
+                 field.setAccessible(true);
+                 propertyValue = String.valueOf(field.get(parameterObject));
+                 if (parameterMapping.getJavaType().isAssignableFrom(String.class)) {
+                     propertyValue = "\"" + propertyValue + "\"";
+                 }
             }
 
             sql = sql.replaceFirst("\\?", propertyValue);
