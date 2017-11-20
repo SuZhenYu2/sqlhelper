@@ -21,7 +21,7 @@
 
 	<groupId>com.github.sqlhelper</groupId>
 	<artifactId>sqlhelper</artifactId>
-	<version>0.0.2</version>
+	<version>0.0.3</version>
 	<packaging>jar</packaging>
 
 	<name>sqlhelper</name>
@@ -155,11 +155,8 @@
 				</plugins>
 			</build>
 			<distributionManagement>
-				<repository>
-					<id>mvn-repo</id>
-					<url>file:D:\logs\maven-repo\Repository</url>
-				</repository>
-			</distributionManagement>
+		 
+	</distributionManagement>
 			<repositories>
 				<repository>
 					<id>suzy2-repository</id>
