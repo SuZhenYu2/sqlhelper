@@ -39,12 +39,16 @@ public class SqlHelper implements Interceptor {
             return invocation.proceed();
         } finally {
         	if(LOGGER.isDebugEnabled()){
-        		 long endTime = System.currentTimeMillis();
-                 long sqlCost = endTime - startTime;
-                   // 格式化Sql语句，去除换行符，替换参数
-                 String sql = formatSql( statementHandler);
-                 sql =beautifySql(sql);
-                 LOGGER.debug("SQL：[" + sql + "]执行耗时[" + sqlCost + "ms]");
+        		 try {
+					long endTime = System.currentTimeMillis();
+					 long sqlCost = endTime - startTime;
+					   // 格式化Sql语句，去除换行符，替换参数
+					 String sql = formatSql( statementHandler);
+					 sql =beautifySql(sql);
+					 LOGGER.debug("SQL：[" + sql + "]执行耗时[" + sqlCost + "ms]");
+				} catch (Exception e) {
+					LOGGER.error(e.getMessage(),e);
+				}
         	}
            
         }
