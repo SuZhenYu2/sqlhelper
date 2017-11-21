@@ -70,13 +70,17 @@ public class SqlHelper implements Interceptor {
 					if (parameterMapping.getMode() != ParameterMode.OUT) {
 						Object value;
 						String propertyName = parameterMapping.getProperty();
+						
 						if (boundSql.hasAdditionalParameter(propertyName)) {
 							value = boundSql.getAdditionalParameter(propertyName);
 						} else if (params == null) {
 							value = null;
 						}/* else if (typeHandlerRegistry.hasTypeHandler(params.getClass())) {
 			                   value = params;
-			               }*/else if( params instanceof String) {
+			               }*/
+							else if( params.getClass().isPrimitive()) {
+			            	   value =params;
+			               }else if( params instanceof String) {
 			            	   value =params;
 			               }else if( params instanceof Arrays) {
 			            	   value =params;
