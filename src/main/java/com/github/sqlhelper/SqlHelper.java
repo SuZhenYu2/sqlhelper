@@ -95,7 +95,8 @@ public class SqlHelper implements Interceptor {
 				}
 			}
 		} catch (Exception e) {
-			LOGGER.error(e.getMessage(),e);
+			LOGGER.info("sqlhelper error:"+sql);
+			LOGGER.info(e.getMessage(),e);
 		}
 		return sql;
 	}
