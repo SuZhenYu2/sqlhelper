@@ -3,6 +3,7 @@ package com.github.sqlhelper;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.ibatis.executor.statement.StatementHandler;
@@ -70,25 +71,31 @@ public class SqlHelper implements Interceptor {
 					if (parameterMapping.getMode() != ParameterMode.OUT) {
 						Object value;
 						String propertyName = parameterMapping.getProperty();
-						
+						JdbcType jdbcType = parameterMapping.getJdbcType();
 						if (boundSql.hasAdditionalParameter(propertyName)) {
 							value = boundSql.getAdditionalParameter(propertyName);
 						} else if (params == null) {
 							value = null;
-						}/* else if (typeHandlerRegistry.hasTypeHandler(params.getClass())) {
+						} else if (jdbcType == null) {
+							value = params;
+							if(params instanceof Map){
+								value =((Map<?, ?>) params).get(propertyName);
+							}
+						}
+						/* else if (typeHandlerRegistry.hasTypeHandler(params.getClass())) {
 			                   value = params;
 			               }*/
-							else if( params.getClass().isPrimitive()) {
-			            	   value =params;
-			               }else if( params instanceof String) {
-			            	   value =params;
-			               }else if( params instanceof Arrays) {
-			            	   value =params;
-			               } else {
-			            	   MetaObject metaObject = SystemMetaObject.forObject(params);
-			            	   value = metaObject.getValue(propertyName);
-			               }
-						JdbcType jdbcType = parameterMapping.getJdbcType();
+						else if( params.getClass().isPrimitive()) {
+							value =params;
+						}else if( params instanceof String) {
+							value =params;
+						}else if( params instanceof Arrays) {
+							value =params;
+						} else {
+							MetaObject metaObject = SystemMetaObject.forObject(params);
+							value = metaObject.getValue(propertyName);
+						}
+
 						if (value == null && jdbcType == null) jdbcType =JdbcType.NULL;
 						sql = replaceParameter(sql, value, jdbcType, parameterMapping.getJavaType());
 					}
