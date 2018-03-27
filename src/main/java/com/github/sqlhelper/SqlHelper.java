@@ -5,9 +5,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
+import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMapping;
 import org.apache.ibatis.mapping.ParameterMode;
 import org.apache.ibatis.plugin.Interceptor;
@@ -21,6 +26,8 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.log4j.Logger;
 
+import com.github.sqlhelper.util.ReflectHelper;
+
 /**
  * Sql执行时间记录拦截器 
  * @author suzy2
@@ -29,6 +36,9 @@ import org.apache.log4j.Logger;
 	@Signature(type = StatementHandler.class, method = "update", args = {Statement.class}),
 	@Signature(type = StatementHandler.class, method = "batch", args = { Statement.class })})
 public class SqlHelper implements Interceptor {
+	
+	private String noPrint;
+	
 	private static Logger LOGGER=Logger.getLogger(SqlHelper.class);
 	@Override
 	public Object intercept(Invocation invocation) throws Throwable {
@@ -44,8 +54,10 @@ public class SqlHelper implements Interceptor {
 				long sqlCost = endTime - startTime;
 				// 格式化Sql语句，去除换行符，替换参数
 				String sql = formatSql( statementHandler);
-				sql =beautifySql(sql);
-				LOGGER.debug("SQL：[" + sql + "]执行耗时[" + sqlCost + "ms]");
+				if(StringUtils.isNotBlank(sql)){
+					sql =beautifySql(sql);
+					LOGGER.debug("SQL：[" + sql + "]执行耗时[" + sqlCost + "ms]");
+				}
 
 			}
 
@@ -61,7 +73,14 @@ public class SqlHelper implements Interceptor {
 		BoundSql boundSql = statementHandler.getBoundSql();
 		Object params =boundSql.getParameterObject();
 
-
+        MappedStatement mappedStatement = (MappedStatement)ReflectHelper.getFieldValue(statementHandler, "mappedStatement");    
+ 
+        if(!StringUtils.isBlank(noPrint)){
+        	   Matcher m = p.matcher(mappedStatement.getId());
+               if( m.matches()) {
+            	   return null;
+               }
+        }
 		List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
 		String sql = boundSql.getSql();
 		try {
@@ -159,16 +178,22 @@ public class SqlHelper implements Interceptor {
 	public void setProperties(Properties properties) {
 
 	}
-	
-	
-	private  static boolean isWrapClass(Class<?> clz) {   
-
+	private static ConcurrentHashMap<Class<?>, Boolean> booleanMap= new ConcurrentHashMap<Class<?>, Boolean>();
+	private   boolean isWrapClass(Class<?> clz) {   
+		Boolean cache = booleanMap.get(clz);
+		
+		if(null != cache) {
+			return cache;
+		}
 		if( clz.isPrimitive()) {
+			booleanMap.put(clz, true);
 			return true;
 		}
 		try {     
+			booleanMap.put(clz, true);
 			return ((Class<?>) clz.getField("TYPE").get(null)).isPrimitive();    
-		} catch (Exception e) {     
+		} catch (Exception e) { 
+			booleanMap.put(clz, false);
 			return false;     
 		}     
 	}     
@@ -181,8 +206,19 @@ public class SqlHelper implements Interceptor {
 		sql = sql.replaceAll("[\\s\n ]+"," ");
 		return sql;
 	}
-	public static void main(String[] args) {
-		 System.out.println(isWrapClass(new Integer(1).getClass()));
+    
+	Pattern p =null;
+ 	public String getNoPrint() {
+		return noPrint;
 	}
+
+	public void setNoPrint(String noPrint) {
+		if(noPrint!=null) {
+			p = Pattern.compile(noPrint);
+		}
+		this.noPrint = noPrint;
+	}
+
+
 
 }
