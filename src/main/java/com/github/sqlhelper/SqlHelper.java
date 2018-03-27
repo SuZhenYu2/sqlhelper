@@ -85,7 +85,7 @@ public class SqlHelper implements Interceptor {
 						/* else if (typeHandlerRegistry.hasTypeHandler(params.getClass())) {
 			                   value = params;
 			               }*/
-						else if( params.getClass().isPrimitive()) {
+						else if(isWrapClass(params.getClass())) {
 							value =params;
 						}else if( params instanceof String) {
 							value =params;
@@ -159,6 +159,19 @@ public class SqlHelper implements Interceptor {
 	public void setProperties(Properties properties) {
 
 	}
+	
+	
+	private  static boolean isWrapClass(Class<?> clz) {   
+
+		if( clz.isPrimitive()) {
+			return true;
+		}
+		try {     
+			return ((Class<?>) clz.getField("TYPE").get(null)).isPrimitive();    
+		} catch (Exception e) {     
+			return false;     
+		}     
+	}     
 
 	/**
 	 * 美化Sql
@@ -167,6 +180,9 @@ public class SqlHelper implements Interceptor {
 		// sql = sql.replace("\n", "").replace("\t", "").replace("  ", " ").replace("( ", "(").replace(" )", ")").replace(" ,", ",");
 		sql = sql.replaceAll("[\\s\n ]+"," ");
 		return sql;
+	}
+	public static void main(String[] args) {
+		 System.out.println(isWrapClass(new Integer(1).getClass()));
 	}
 
 }
