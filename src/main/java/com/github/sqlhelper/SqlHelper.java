@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.executor.statement.RoutingStatementHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -73,14 +74,18 @@ public class SqlHelper implements Interceptor {
 		BoundSql boundSql = statementHandler.getBoundSql();
 		Object params =boundSql.getParameterObject();
 
-        MappedStatement mappedStatement = (MappedStatement)ReflectHelper.getFieldValue(statementHandler, "mappedStatement");    
- 
-        if(!StringUtils.isBlank(noPrint)){
-        	   Matcher m = p.matcher(mappedStatement.getId());
-               if( m.matches()) {
-            	   return null;
-               }
-        }
+	
+		if(StringUtils.isNotBlank(noPrint)){
+			Object obj =statementHandler;
+			if(statementHandler instanceof RoutingStatementHandler){
+				obj =  ReflectHelper.getFieldValue(statementHandler, "delegate");    
+			}
+			MappedStatement mappedStatement = (MappedStatement)ReflectHelper.getFieldValue(obj, "mappedStatement");    
+			Matcher m = p.matcher(mappedStatement.getId());
+			if( m.matches()) {
+				return null;
+			}
+		}
 		List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
 		String sql = boundSql.getSql();
 		try {
