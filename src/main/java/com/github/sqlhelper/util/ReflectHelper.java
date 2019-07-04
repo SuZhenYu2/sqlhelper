@@ -1,13 +1,14 @@
 package com.github.sqlhelper.util;
 
- 
-import java.lang.reflect.Field;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.log4j.Logger;  
-  
-public class ReflectHelper {  
-	private static Logger LOGGER=Logger.getLogger(ReflectHelper.class);
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Field;
+
+public class ReflectHelper {
+    private static Logger LOGGER = LoggerFactory.getLogger(ReflectHelper.class);
 
     public static Object getFieldValue(Object obj , String fieldName ){  
           

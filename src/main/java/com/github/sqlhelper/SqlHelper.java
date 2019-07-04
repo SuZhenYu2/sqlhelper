@@ -25,22 +25,27 @@ import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.type.JdbcType;
-import org.apache.log4j.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.github.sqlhelper.util.ReflectHelper;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 /**
  * Sql执行时间记录拦截器 
  * @author suzy2
  */
 @Intercepts({@Signature(type = StatementHandler.class, method = "query", args = {Statement.class, ResultHandler.class}),
-	@Signature(type = StatementHandler.class, method = "update", args = {Statement.class}),
-	@Signature(type = StatementHandler.class, method = "batch", args = { Statement.class })})
+		@Signature(type = StatementHandler.class, method = "update", args = {Statement.class}),
+		@Signature(type = StatementHandler.class, method = "batch", args = { Statement.class })})
 public class SqlHelper implements Interceptor {
-	
+	private static final ExpressionParser PARSER = new SpelExpressionParser();
+
 	private String noPrint;
-	
-	private static Logger LOGGER=Logger.getLogger(SqlHelper.class);
+
+	private static Logger LOGGER = LoggerFactory.getLogger(SqlHelper.class);
 	@Override
 	public Object intercept(Invocation invocation) throws Throwable {
 		Object target = invocation.getTarget();
@@ -74,13 +79,13 @@ public class SqlHelper implements Interceptor {
 		BoundSql boundSql = statementHandler.getBoundSql();
 		Object params =boundSql.getParameterObject();
 
-	
+
 		if(StringUtils.isNotBlank(noPrint)){
 			Object obj =statementHandler;
 			if(statementHandler instanceof RoutingStatementHandler){
-				obj =  ReflectHelper.getFieldValue(statementHandler, "delegate");    
+				obj =  ReflectHelper.getFieldValue(statementHandler, "delegate");
 			}
-			MappedStatement mappedStatement = (MappedStatement)ReflectHelper.getFieldValue(obj, "mappedStatement");    
+			MappedStatement mappedStatement = (MappedStatement)ReflectHelper.getFieldValue(obj, "mappedStatement");
 			Matcher m = p.matcher(mappedStatement.getId());
 			if( m.matches()) {
 				return null;
@@ -89,6 +94,7 @@ public class SqlHelper implements Interceptor {
 		List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
 		String sql = boundSql.getSql();
 		try {
+
 			if (parameterMappings != null) {
 				for (int i = 0; i < parameterMappings.size(); i++) {
 					ParameterMapping parameterMapping = parameterMappings.get(i);
@@ -103,7 +109,9 @@ public class SqlHelper implements Interceptor {
 						} else if (jdbcType == null) {
 							value = params;
 							if(params instanceof Map){
-								value =((Map<?, ?>) params).get(propertyName);
+								EvaluationContext context = new StandardEvaluationContext();  // 表达式的上下文,
+								((StandardEvaluationContext) context).setVariables((Map)params);
+								 value = PARSER.parseExpression("#"+propertyName).getValue(context, String.class);   // Tom , 使用变量
 							}
 						}
 						/* else if (typeHandlerRegistry.hasTypeHandler(params.getClass())) {
@@ -145,25 +153,25 @@ public class SqlHelper implements Interceptor {
 		String strValue = String.valueOf(value);
 		if (jdbcType != null) {
 			switch (jdbcType) {
-			//数字
-			case BIT:
-			case TINYINT:
-			case SMALLINT:
-			case INTEGER:
-			case BIGINT:
-			case FLOAT:
-			case REAL:
-			case DOUBLE:
-			case NUMERIC:
-			case DECIMAL:
-				break;
+				//数字
+				case BIT:
+				case TINYINT:
+				case SMALLINT:
+				case INTEGER:
+				case BIGINT:
+				case FLOAT:
+				case REAL:
+				case DOUBLE:
+				case NUMERIC:
+				case DECIMAL:
+					break;
 				//日期
-			case DATE:
-			case TIME:
-			case TIMESTAMP:
-				//其他，包含字符串和其他特殊类型
-			default:
-				strValue = "'" + strValue + "'";
+				case DATE:
+				case TIME:
+				case TIMESTAMP:
+					//其他，包含字符串和其他特殊类型
+				default:
+					strValue = "'" + strValue + "'";
 
 
 			}
@@ -184,9 +192,9 @@ public class SqlHelper implements Interceptor {
 
 	}
 	private static ConcurrentHashMap<Class<?>, Boolean> booleanMap= new ConcurrentHashMap<Class<?>, Boolean>();
-	private   boolean isWrapClass(Class<?> clz) {   
+	private   boolean isWrapClass(Class<?> clz) {
 		Boolean cache = booleanMap.get(clz);
-		
+
 		if(null != cache) {
 			return cache;
 		}
@@ -194,14 +202,14 @@ public class SqlHelper implements Interceptor {
 			booleanMap.put(clz, true);
 			return true;
 		}
-		try {     
+		try {
 			booleanMap.put(clz, true);
-			return ((Class<?>) clz.getField("TYPE").get(null)).isPrimitive();    
-		} catch (Exception e) { 
+			return ((Class<?>) clz.getField("TYPE").get(null)).isPrimitive();
+		} catch (Exception e) {
 			booleanMap.put(clz, false);
-			return false;     
-		}     
-	}     
+			return false;
+		}
+	}
 
 	/**
 	 * 美化Sql
@@ -211,9 +219,9 @@ public class SqlHelper implements Interceptor {
 		sql = sql.replaceAll("[\\s\n ]+"," ");
 		return sql;
 	}
-    
+
 	Pattern p =null;
- 	public String getNoPrint() {
+	public String getNoPrint() {
 		return noPrint;
 	}
 
